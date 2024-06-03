@@ -1,7 +1,7 @@
 ### model
 model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
 quantization_bit: 4
-hf_token: ####
+hf_token: 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
 double_quantization: True
 quantization_type: nf4  
 
@@ -15,25 +15,27 @@ lora_target: q_proj,v_proj
 
 ### dataset
 dataset_name: gbharti/wealth-alpaca_lora
+seed: 16
 
 ### output
 output_dir: saves/llama3-8b-instruct-wealth-alpaca-lora-4bit
-logging_steps: 500
-save_steps: 500
+logging_steps: 20
+save_steps: 50
 
 ### train
+do_train: True
 per_device_train_batch_size: 4
 gradient_accumulation_steps: 32
-learning_rate: 1e-5
+learning_rate: 0.0002
 num_train_epochs: 1
-cutoff_len: 512
-bfp16: True
+cutoff_len: 256
+bf16: True
 load_best_model_at_end: True
-warmup_steps: 500
+warmup_steps: 100
 weight_decay: 0.01
 
 ### eval
-val_size: 0.2
+val_size: 2000
 # per_device_eval_batch_size: 1
-evaluation_strategy: steps
-# eval_steps: 500
+eval_strategy: steps
+eval_steps: 50

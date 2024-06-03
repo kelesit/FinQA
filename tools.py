@@ -3,7 +3,7 @@ from typing import Callable
 
 from transformers import AutoTokenizer
 
-from .hparams import DataArguments
+from hparams import DataArguments
 
 def get_preprocess_func(tokenizer:"AutoTokenizer", data_args:"DataArguments")-> Callable:
     preprocess_func = partial(

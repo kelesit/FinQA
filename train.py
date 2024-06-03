@@ -3,8 +3,12 @@ import transformers
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, Trainer
 from peft import get_peft_model, prepare_model_for_kbit_training, LoraConfig, TaskType
 
-from .hparams import get_train_args
-from .tools import get_preprocess_func
+from hparams import get_train_args
+from tools import get_preprocess_func
+
+from torch.utils.tensorboard import SummaryWriter
+from transformers.integrations import TensorBoardCallback
+
 
 def main():
 
@@ -17,6 +21,7 @@ def main():
         trust_remote_code=True,
         token=model_args.hf_token,
     )
+    tokenizer.pad_token_id = 0
 
     # Load base model
     if model_args.quantization_bit is not None:
@@ -62,11 +67,11 @@ def main():
 
     # Load dataset
     data = load_dataset(data_args.dataset_name)
-    data = data.shuffle(seed=finetuning_args.seed)
+    data = data.shuffle(seed=training_args.seed)
     preprocess_func = get_preprocess_func(tokenizer, data_args)
 
     if data_args.val_size > 0:
-        train_val = data['train'].train_test_split(test_size=data_args.val_size, seed=finetuning_args.seed)
+        train_val = data['train'].train_test_split(test_size=data_args.val_size, seed=training_args.seed)
         train_data = train_val['train'].map(preprocess_func)
         val_data = train_val['test'].map(preprocess_func)
     else:
@@ -74,6 +79,7 @@ def main():
         val_data = None
 
     # Trainer
+    writer = SummaryWriter()
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -81,6 +87,7 @@ def main():
         eval_dataset=val_data,
         tokenizer=tokenizer,
         data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False), 
+        callbacks=[TensorBoardCallback(writer)],
     )
 
 
@@ -89,4 +96,7 @@ def main():
         trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
         trainer.save_model()
         trainer.save_state()
+    writer.close()
 
+if __name__ == "__main__":
+    main()
